@@ -1,0 +1,326 @@
+temp.parseFunc_ATTRIBUTE {
+	makelinks = 1
+	makelinks.http.keep = {$styles.content.links.keep}
+	makelinks.http.extTarget = {$styles.content.links.extTarget}
+	makelinks.mailto.keep = path
+	tags {
+		link = TEXT
+		link {
+			current = 1
+			typolink.parameter.data = parameters : allParams
+			typolink.extTarget = external
+			typolink.target = internal
+			parseFunc.constants =1
+		}
+	}
+	allowTags = strong,br,ul,ol,li,table,tr,td,em,u,sub,sup,p,hr,center,pre,a
+	denyTags = *
+	sword = <span class="csc-sword">|</span>
+	constants = 1
+
+	nonTypoTagStdWrap{
+		HTMLparser = 1
+		HTMLparser {
+			keepNonMatchedTags = 1
+			htmlSpecialChars = 2
+		}
+	}
+}
+
+temp.parseFunc_INNER < temp.parseFunc_ATTRIBUTE
+temp.parseFunc_INNER{
+	nonTypoTagStdWrap{
+		encapsLines{
+			encapsTagList=div,p,pre,h1,h2,h3,h4,h5,h6
+			remapTag{
+				DIV = P
+			}
+			nonWrappedTag = P
+			innerStdWrap_all{
+				ifBlank = &nbsp;
+			}
+		}
+	}
+}
+
+temp.wraps{
+	pageWrap.wrap(
+	 	<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+   	    <!DOCTYPE page [
+			<!ENTITY lt     "&#38;#60;">
+			<!ENTITY gt     "&#62;">
+			<!ENTITY amp    "&#38;#38;">
+			<!ENTITY apos   "&#39;">
+			<!ENTITY quot   "&#34;">
+			<!ENTITY nbsp   "&#160;">
+		]>
+        <tt:page uid="{page:uid}" xmlns:tt="http://notyetpublished">|</tt:page>
+    )
+
+ 	contentWrap.dataWrap	= <tt:content xmlns:tt="http://notyetpublished" uid="{field:uid}" ctype="{field:CType}" spacebefore="{field:spaceBefore}" spaceafter="{field:spaceAfter}" sorting="{fields:sorting}">|</tt:content>
+	imageWrap.wrap 			= <tt:image href="|"></tt:image>
+	imageListWrap.stdWrap.dataWrap 	(
+								 <tt:imagelist alt="{field:altText}"
+								 			   title="{field:titleText}"
+								 			   orientation="{field:imageorient}"
+								 			   width="{field:imagewidth}"
+								 			   height="{field:imageheight}"
+								 			   longdescriptionurl="{field:longdescURL}"
+								 			   columns="{field:imagecols}"
+								 			   border="{field:imageborder}">|</tt:imagelist>
+							)
+	imageListWrap.stdWrap.parseFunc = < temp.parseFunc
+
+	headerWrap.dataWrap 	= <tt:headertext align="{field:header_position}">|</tt:headertext>
+	headerlinkWrap.wrap		= <tt:headerlink>|</tt:headerlink>
+	bodyWrap.dataWrap		= <tt:bodytext rte="{field:rte_enable}" layout="{field:layout}" align="{field:text_align}">|</tt:bodytext>
+
+	#text_properties
+	boldWrap.wrap 			= <tt:bold>|</tt:bold>
+	italicWrap.wrap			= <tt:italic>|</tt:italic>
+	underlineWrap.wrap		= <tt:underlined>|</tt:underlined>
+
+	#in the innerpart of the bodytext we use html
+	#tables
+	tableWrap.dataWrap		= <table border="{field:table_border}">|</table>
+	tablelineWrap.wrap		= <tr>|</tr>
+	tabledataWrap.wrap		= <td>|</td>
+
+	#lists
+	orderedListWrap.wrap	= <ol>|</ol>
+	unorderedListWrap.wrap	= <ul>|</ul>
+	listItemWrap.wrap		= <li>|</li>
+}
+
+
+temp.render = COA
+temp.render{
+   headertext = TEXT
+   headertext{
+		field = header
+		parseFunc < temp.parseFunc_ATTRIBUTE
+		dataWrap = <tt:headertext align="{field:header_position}">|</tt:headertext>
+   }
+
+   text = TEXT
+   text{
+   		field = bodytext
+   		parseFunc < temp.parseFunc_INNER
+   		dataWrap = <tt:bodytext rte="{field:rte_enable}" layout="{field:layout}" align="{field:text_align}">|</tt:bodytext>
+   }
+
+   html < text
+   html.parseFunc >
+
+   table = TEXT
+   table{
+   	 field = bodytext
+   	 split {
+   	    token.char = 10
+   	    cObjNum = 1
+   	    1.current = 1
+   	    1{
+   	      10 = TEXT
+   	      split{
+   	      	token.char = 124
+   	      	cObjNum = 1
+   	      	1.current = 1
+   	      	1{
+   	      		10=TEXT
+   	      		wrap = <td> | </td>
+   	      	}
+   	      }
+   	      wrap = <tr> | </tr>
+   	    }
+   	 }
+	 dataWrap = <tt:bodytext rte="{field:rte_enable}" layout="{field:layout}" align="{field:text_align}"><table border="{field:table_border}"> | </table></tt:bodytext>
+   }
+
+   bullets = TEXT
+   bullets{
+   	 field = bodytext
+   	 split {
+   	 	token.char = 10
+   	 	cObjNum = 1
+   	 	1.current = 1
+   	 	1{
+   	 		10 = TEXT
+   	 		wrap = <li> | </li>
+   	 	}
+   	 }
+   	 wrap = <ul> | </ul>
+	 dataWrap = <tt:bodytext rte="{field:rte_enable}" layout="{field:layout}" align="{field:text_align}">|</tt:bodytext>
+   }
+
+   imagelist_web = TEXT
+   imagelist_web{
+	 field = image
+     split {
+	    token.char = 44
+        cObjNum = 1
+     	1 {
+			10 = COA
+			10{
+				10 = IMG_RESOURCE
+			 	10 {
+                	file {
+                    	import=uploads/pics/
+                    	import.current = 1
+                 	}
+			 	}
+			 	10.stdWrap.noTrimWrap = | href="|"|
+
+			 	20 = TEXT
+			 	20.field = altText
+			 	20.stripHTML = 1
+			    20.split.token.char = 10
+				20.split.returnKey.data = register : SPLIT_COUNT
+				20.parseFunc < temp.parseFunc_ATTRIBUTE
+				20.noTrimWrap = | alt="|"|
+
+			 	30 = TEXT
+			 	30.field = titleText
+			 	30.stripHTML = 1
+			    30.split.token.char = 10
+				30.split.returnKey.data = register : SPLIT_COUNT
+			 	30.parseFunc < temp.parseFunc_ATTRIBUTE
+			 	30.noTrimWrap = | title="|"|
+
+			 	40 = TEXT
+			 	40.field = imagecaption
+			 	40.stripHTML = 1
+			    40.split.token.char = 10
+				40.split.returnKey.data = register : SPLIT_COUNT
+			 	40.parseFunc < temp.parseFunc_ATTRIBUTE
+			 	40.noTrimWrap = | caption="|"|
+  			}
+
+  			stdWrap.wrap = <tt:image | />
+        }
+   	}
+    dataWrap = <tt:imagelist scope="web" columns="{field:imagecols}" border="{field:imageborder}" orientation="{field:imageorient}">|</tt:imagelist>
+  }
+
+  #
+  # imagelist print uses the same title captions etc, but is rendered from the db field tx_bridge_printimages
+  # and the 'scope' of the list is print
+  #
+  imagelist_print = TEXT
+  imagelist_print < .imagelist_web
+  imagelist_print.field =  tx_bridge_lib_printimages
+  imagelist_print.split.1.10.10.file.import=uploads/tx_bridgelib/
+  imagelist_print.dataWrap = <tt:imagelist scope="print" columns="{field:imagecols}" border="{field:imageborder}" orientation="{field:imageorient}">|</tt:imagelist>
+}
+
+#
+# Template form all Render COAs
+#
+temp.cobj = COA
+temp.cobj{
+	stdWrap.dataWrap < temp.wraps.contentWrap.dataWrap
+}
+
+# ***************************************************************************
+# Notice: "styles." (and "temp.") objects are UNSET after template parsing!
+# Use "lib." for persisting storage of objects.
+# ***************************************************************************
+styles.xmlcontent.get >
+styles.xmlcontent.get = CONTENT
+styles.xmlcontent.get {
+  table = tt_content
+  select.orderBy = sorting
+  select.languageField = sys_language_uid
+  renderObj = < xmlcontent
+}
+
+#******************************************************
+# Including library for processing of some elements:
+#******************************************************
+includeLibs.xml_contentrendering = EXT:xmlrendering/pi1/class.tx_xmlrendering_pi1.php
+
+#******************************************************
+# xmlcontent.tt_content is started.
+#******************************************************
+xmlcontent >
+xmlcontent = CASE
+xmlcontent.key.field = CType
+
+xmlcontent.default = COA
+xmlcontent.default < temp.cobj
+xmlcontent.default {
+	10 < temp.render.headertext
+	20 < temp.render.text
+}
+
+# CType: image
+xmlcontent.image = COA
+xmlcontent.image < temp.cobj
+xmlcontent.image{
+	10 < temp.render.headertext
+	30 < temp.render.imagelist_web
+	40 < temp.render.imagelist_print
+}
+
+# CType: text
+xmlcontent.text = COA
+xmlcontent.text < temp.cobj
+xmlcontent.text{
+	10 < temp.render.headertext
+	20 < temp.render.text
+}
+
+# CType: textpic
+xmlcontent.textpic = COA
+xmlcontent.textpic < temp.cobj
+xmlcontent.textpic{
+	10 < temp.render.headertext
+	20 < temp.render.text
+	30 < temp.render.imagelist_web
+	40 < temp.render.imagelist_print
+}
+
+# CType: table
+xmlcontent.table = COA
+xmlcontent.table < temp.cobj
+xmlcontent.table{
+	10 < temp.render.headertext
+	20 < temp.render.table
+}
+
+# CType: bullets
+xmlcontent.bullets = COA
+xmlcontent.bullets < temp.cobj
+xmlcontent.bullets{
+	10 < temp.render.headertext
+	20 < temp.render.bullets
+}
+
+# CType: html
+xmlcontent.html = COA
+xmlcontent.html < temp.cobj
+xmlcontent.html{
+	10 < temp.render.headertext
+	20 < temp.render.html
+}
+
+# CType: list (also known as "Plugins")
+xmlcontent.list = CASE
+xmlcontent.list.key.field = list_type
+xmlcontent.list.tt_news = ...
+
+// example PAGE object using styles.xmlcontent.get
+xml_contentrendering >
+xml_contentrendering = PAGE
+xml_contentrendering {
+  typeNum=555
+  config.disableAllHeaderCode = 1
+  config.additionalHeaders = Content-type:text/xml
+  config.admPanel = 0
+  config.xhtml_cleaning = 0
+
+  10 = COA
+  10 {
+    stdWrap.dataWrap < temp.wraps.pageWrap.wrap
+    20 < styles.xmlcontent.get
+  }
+}
